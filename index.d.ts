@@ -10,7 +10,7 @@ export interface AxiosRequestTransformer {
 }
 
 export interface AxiosResponseTransformer {
-  (data: any, headers?: AxiosResponseHeaders): any;
+  (data: any, headers?: AxiosResponseHeaders, status?: number): any;
 }
 
 export interface AxiosAdapter {
@@ -137,6 +137,10 @@ export interface AxiosDefaults<D = any> extends Omit<AxiosRequestConfig<D>, 'hea
   headers: HeadersDefaults;
 }
 
+export interface CreateAxiosDefaults<D = any> extends Omit<AxiosRequestConfig<D>, 'headers'> {
+  headers?: AxiosRequestHeaders | Partial<HeadersDefaults>;
+}
+
 export interface AxiosResponse<T = any, D = any>  {
   data: T;
   status: number;
@@ -241,6 +245,12 @@ export class Axios {
 export interface AxiosInstance extends Axios {
   (config: AxiosRequestConfig): AxiosPromise;
   (url: string, config?: AxiosRequestConfig): AxiosPromise;
+
+  defaults: Omit<AxiosDefaults, 'headers'> & {
+    headers: HeadersDefaults & {
+      [key: string]: string | number | boolean | undefined
+    }
+  };
 }
 
 export interface GenericFormData {
@@ -248,7 +258,7 @@ export interface GenericFormData {
 }
 
 export interface AxiosStatic extends AxiosInstance {
-  create(config?: AxiosRequestConfig): AxiosInstance;
+  create(config?: CreateAxiosDefaults): AxiosInstance;
   Cancel: CancelStatic;
   CancelToken: CancelTokenStatic;
   Axios: typeof Axios;
