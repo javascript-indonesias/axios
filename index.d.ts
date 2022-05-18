@@ -1,5 +1,15 @@
-// TypeScript Version: 3.0
-export type AxiosRequestHeaders = Record<string, string | number | boolean>;
+// TypeScript Version: 4.1
+type AxiosHeaders = Record<string, string | string[] | number | boolean>;
+
+type MethodsHeaders = {
+  [Key in Method as Lowercase<Key>]: AxiosHeaders;
+};
+
+interface CommonHeaders  {
+  common: AxiosHeaders;
+}
+
+export type AxiosRequestHeaders = Partial<AxiosHeaders & MethodsHeaders & CommonHeaders>;
 
 export type AxiosResponseHeaders = Record<string, string> & {
   "set-cookie"?: string[]
@@ -182,7 +192,7 @@ export class AxiosError<T = unknown, D = any> extends Error {
   request?: any;
   response?: AxiosResponse<T, D>;
   isAxiosError: boolean;
-  status?: string;
+  status?: number;
   toJSON: () => object;
   static readonly ERR_FR_TOO_MANY_REDIRECTS = "ERR_FR_TOO_MANY_REDIRECTS";
   static readonly ERR_BAD_OPTION_VALUE = "ERR_BAD_OPTION_VALUE";
@@ -210,7 +220,7 @@ export interface Cancel {
 }
 
 export interface Canceler {
-  (message?: string): void;
+  (message?: string, config?: AxiosRequestConfig, request?: any): void;
 }
 
 export interface CancelTokenStatic {
@@ -261,8 +271,8 @@ export class Axios {
 }
 
 export interface AxiosInstance extends Axios {
-  (config: AxiosRequestConfig): AxiosPromise;
-  (url: string, config?: AxiosRequestConfig): AxiosPromise;
+  <T = any, R = AxiosResponse<T>, D = any>(config: AxiosRequestConfig<D>): AxiosPromise<R>;
+  <T = any, R = AxiosResponse<T>, D = any>(url: string, config?: AxiosRequestConfig<D>): AxiosPromise<R>;
 
   defaults: Omit<AxiosDefaults, 'headers'> & {
     headers: HeadersDefaults & {
@@ -282,7 +292,7 @@ export interface AxiosStatic extends AxiosInstance {
   Axios: typeof Axios;
   AxiosError: typeof AxiosError;
   readonly VERSION: string;
-  isCancel(value: any): boolean;
+  isCancel(value: any): value is Cancel;
   all<T>(values: Array<T | Promise<T>>): Promise<T[]>;
   spread<T, R>(callback: (...args: T[]) => R): (array: T[]) => R;
   isAxiosError<T = any, D = any>(payload: any): payload is AxiosError<T, D>;
