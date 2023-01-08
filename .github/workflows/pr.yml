@@ -32,12 +32,16 @@ jobs:
           node-version: 16
           cache: npm
       - run: npm install
-      - name: release
+      - name: Prepare release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TYPE_ARG: ${{ fromJSON('{"auto":"", "patch":"--patch", "minor":"--minor", "major":"--major"}')[github.event.inputs.type] }}
           BETA_ARG: ${{ github.event.inputs.beta == 'true' && '--preRelease=beta' || '' }}
-        run: npm run release -- --ci --verbose $TYPE_ARG $BETA_ARG
+        run: npm run release -- --ci --verbose --no-git.push --no-git.commit --no-git.tag --no-github $TYPE_ARG $BETA_ARG $DRY_ARG
+      - name: Add contributors list to CHANGELOG.md
+        run: npm run release:changelog:fix
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: get-npm-version
         id: package-version
         uses: martinbeentjes/npm-get-version-action@main
@@ -51,9 +55,11 @@ jobs:
           run: node ./bin/pr.js
       - name: Create pull request
         uses: peter-evans/create-pull-request@v4
+        id: cpr
         with:
           branch: release
           delete-branch: true
+          commit-message: 'chore(release): v${{ steps.package-version.outputs.current-version}}'
           title: '[Release] v${{ steps.package-version.outputs.current-version}}'
           body: |
             ${{ steps.body.outputs.stdout }}
@@ -69,3 +75,7 @@ jobs:
           #assignees: jasonsaayman
           #reviewers: jasonsaayman
           draft: false
+      - name: Show PR link
+        if: ${{ steps.cpr.outputs.pull-request-url }}
+        run: |
+          echo "Axios Release v${{ steps.package-version.outputs.current-version}}' pull request - ${{ steps.cpr.outputs.pull-request-url }}"
